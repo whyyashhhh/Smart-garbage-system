@@ -9,6 +9,8 @@ const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');
 
 const app = express();
+const isVercel = Boolean(process.env.VERCEL);
+const uploadDir = process.env.UPLOAD_DIR || (isVercel ? '/tmp/uploads' : path.join(__dirname, 'uploads'));
 
 // Middleware
 app.use(cors());
@@ -16,18 +18,38 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve uploaded files statically
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(uploadDir));
 
 // Database Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/smart-garbage-reporting';
 
-mongoose.connect(MONGODB_URI)
+let cached = global.mongoose;
+if (!cached) {
+    cached = global.mongoose = { conn: null, promise: null };
+}
+
+const connectDB = async () => {
+    if (cached.conn) {
+        return cached.conn;
+    }
+
+    if (!cached.promise) {
+        cached.promise = mongoose.connect(MONGODB_URI).then((mongooseInstance) => mongooseInstance);
+    }
+
+    cached.conn = await cached.promise;
+    return cached.conn;
+};
+
+connectDB()
     .then(() => {
         console.log('✅ Connected to MongoDB');
     })
     .catch((error) => {
         console.error('❌ MongoDB connection error:', error.message);
-        process.exit(1);
+        if (!isVercel) {
+            process.exit(1);
+        }
     });
 
 // API Routes
@@ -59,8 +81,12 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+// Start server (local/dev)
+if (require.main === module) {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;

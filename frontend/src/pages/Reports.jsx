@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Toast from '../components/Toast';
-import API from '../services/api';
+import API, { UPLOADS_BASE_URL } from '../services/api';
 
 export default function Reports() {
     const [reports, setReports] = useState([]);
@@ -117,7 +117,7 @@ export default function Reports() {
                                 {/* Image */}
                                 {report.image && (
                                     <img
-                                        src={`http://localhost:5000/uploads/${report.image}`}
+                                        src={`${UPLOADS_BASE_URL}/${report.image}`}
                                         alt="Report"
                                         className="w-full h-48 object-cover"
                                     />

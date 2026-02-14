@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api, { UPLOADS_BASE_URL } from '../services/api';
 import Toast from '../components/Toast';
 
 const AdminDashboard = () => {
@@ -237,8 +237,8 @@ const AdminDashboard = () => {
 
                     {report.image && (
                       <div className="mt-4">
-                        <img 
-                          src={`http://localhost:5000${report.image}`} 
+                        <img
+                          src={`${UPLOADS_BASE_URL}/${report.image}`} 
                           alt="Report" 
                           className="w-48 h-32 object-cover rounded-lg"
                         />

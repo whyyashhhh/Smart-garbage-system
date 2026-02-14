@@ -83,6 +83,30 @@ NODE_ENV=development
 VITE_API_URL=http://localhost:5000/api
 ```
 
+## ▲ Vercel Deployment
+
+This repo is ready for Vercel with a monorepo config at `vercel.json`.
+
+### 1. Create a Vercel Project
+- Import the repository and set the project root to `smart-garbage-reporting-system`.
+- Vercel will use `vercel.json` for both frontend and backend builds.
+
+### 2. Set Environment Variables (Vercel Dashboard)
+Backend:
+- `MONGODB_URI`
+- `JWT_SECRET`
+- `NODE_ENV=production`
+
+Frontend (optional, defaults to `/api`):
+- `VITE_API_URL=/api`
+- `VITE_UPLOADS_URL` (only if you serve uploads from a separate host)
+
+### 3. Deploy
+- Push to `main` or trigger a manual deploy.
+
+### 4. Note on Uploads
+Vercel functions do not provide persistent disk storage. Uploaded images will not persist across deployments or cold starts. Use external storage (S3, Cloudinary, etc.) for production uploads.
+
 ## 📱 Features Checklist
 
 - ✅ User authentication (Signup/Login)

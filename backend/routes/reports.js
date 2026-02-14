@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const Report = require('../models/Report');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
@@ -10,9 +11,12 @@ const { sendReportResolvedEmail, sendNewReportNotification } = require('../servi
 const router = express.Router();
 
 // Configure multer for image uploads
+const uploadDir = process.env.UPLOAD_DIR || (process.env.VERCEL ? '/tmp/uploads' : 'uploads');
+fs.mkdirSync(uploadDir, { recursive: true });
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/');
+        cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
         // Generate unique filename with timestamp
