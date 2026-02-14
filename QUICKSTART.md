@@ -85,11 +85,14 @@ VITE_API_URL=http://localhost:5000/api
 
 ## ▲ Vercel Deployment
 
-This repo is ready for Vercel with a monorepo config at `vercel.json`.
+This repo is ready for Vercel with rewrites defined in `vercel.json`.
 
 ### 1. Create a Vercel Project
 - Import the repository and set the project root to `smart-garbage-reporting-system`.
-- Vercel will use `vercel.json` for both frontend and backend builds.
+- Set Build Command to:
+  `npm --prefix frontend install; npm --prefix frontend run build`
+- Set Output Directory to:
+  `frontend/dist`
 
 ### 2. Set Environment Variables (Vercel Dashboard)
 Backend:

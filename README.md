@@ -162,17 +162,20 @@ The frontend will run on `http://localhost:3000` and automatically open in your 
 
 ## ▲ Deploy to Vercel
 
-This repo includes a monorepo Vercel config at `vercel.json` for both frontend and backend.
+This repo includes Vercel rewrites in `vercel.json` and uses Project Settings for builds.
 
 ### Steps
 1. Create a new Vercel project and set the root directory to `smart-garbage-reporting-system`.
-2. Add environment variables:
+2. Configure Project Settings:
+    - Build Command: `npm --prefix frontend install; npm --prefix frontend run build`
+    - Output Directory: `frontend/dist`
+3. Add environment variables:
     - `MONGODB_URI`
     - `JWT_SECRET`
     - `NODE_ENV=production`
     - `VITE_API_URL=/api` (optional)
     - `VITE_UPLOADS_URL` (only if serving uploads from another host)
-3. Deploy.
+4. Deploy.
 
 ### Uploads in Production
 Vercel functions do not provide persistent disk storage. For production, use external storage (S3, Cloudinary, etc.) for image uploads.
