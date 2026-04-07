@@ -27,10 +27,41 @@ const mongoUriFromEnv =
     process.env.MONGODB_URI ||
     process.env.MONGODB_URL ||
     process.env.MONGO_URI ||
+    process.env.MONGODB ||
     process.env.DATABASE_URL ||
     '';
 
-const MONGODB_URI = (mongoUriFromEnv || (!isVercel ? 'mongodb://localhost:27017/smart-garbage-reporting' : '')).trim();
+const normalizeMongoUri = (uri) => {
+    const raw = (uri || '').trim();
+    if (!raw) {
+        return '';
+    }
+
+    // Add common Atlas params if missing to reduce connection compatibility issues.
+    if (raw.startsWith('mongodb+srv://')) {
+        const hasQuery = raw.includes('?');
+        if (!hasQuery) {
+            return `${raw}?retryWrites=true&w=majority`;
+        }
+
+        const hasRetryWrites = /[?&]retryWrites=/.test(raw);
+        const hasWriteConcern = /[?&]w=/.test(raw);
+        let updated = raw;
+
+        if (!hasRetryWrites) {
+            updated += '&retryWrites=true';
+        }
+        if (!hasWriteConcern) {
+            updated += '&w=majority';
+        }
+
+        return updated;
+    }
+
+    return raw;
+};
+
+const MONGODB_URI = normalizeMongoUri(mongoUriFromEnv || (!isVercel ? 'mongodb://localhost:27017/smart-garbage-reporting' : ''));
 const JWT_SECRET = (process.env.JWT_SECRET || '').trim();
 let lastMongoError = null;
 
@@ -95,7 +126,10 @@ const connectDB = async () => {
     if (!cached.promise) {
         cached.promise = mongoose
             .connect(MONGODB_URI, {
-                serverSelectionTimeoutMS: 15000
+                serverSelectionTimeoutMS: 20000,
+                socketTimeoutMS: 45000,
+                maxPoolSize: 10,
+                family: 4
             })
             .then((mongooseInstance) => {
                 lastMongoError = null;
