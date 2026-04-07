@@ -165,15 +165,17 @@ The frontend will run on `http://localhost:3000` and automatically open in your 
 This repo includes Vercel rewrites in `vercel.json` and uses Project Settings for builds.
 
 ### Steps
-1. Create a new Vercel project and set the root directory to `smart-garbage-reporting-system`.
-2. Configure Project Settings:
-    - Build Command: `npm --prefix frontend install; npm --prefix frontend run build`
+1. Create a new Vercel project and keep Root Directory as repository root (`.` / empty).
+2. `vercel.json` controls install/build/output automatically:
+    - Install Command: `npm --prefix frontend install; npm --prefix backend install`
+    - Build Command: `npm --prefix frontend run build`
     - Output Directory: `frontend/dist`
+   If these fields are disabled in Vercel UI, that is expected.
 3. Add environment variables:
     - `MONGODB_URI`
     - `JWT_SECRET`
     - `NODE_ENV=production`
-    - `VITE_API_URL=/api` (optional)
+    - `VITE_API_URL=/api` (optional; frontend uses `/api` in production by default)
     - `VITE_UPLOADS_URL` (only if serving uploads from another host)
 4. Deploy.
 

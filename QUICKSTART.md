@@ -88,11 +88,12 @@ VITE_API_URL=http://localhost:5000/api
 This repo is ready for Vercel with rewrites defined in `vercel.json`.
 
 ### 1. Create a Vercel Project
-- Import the repository and set the project root to `smart-garbage-reporting-system`.
-- Set Build Command to:
-  `npm --prefix frontend install; npm --prefix frontend run build`
-- Set Output Directory to:
-  `frontend/dist`
+- Import the repository and keep Root Directory as repository root (`.` / empty).
+- `vercel.json` controls these settings:
+  - Install Command: `npm --prefix frontend install; npm --prefix backend install`
+  - Build Command: `npm --prefix frontend run build`
+  - Output Directory: `frontend/dist`
+- If Build/Output fields are disabled in Vercel UI, that is expected.
 
 ### 2. Set Environment Variables (Vercel Dashboard)
 Backend:
@@ -101,7 +102,7 @@ Backend:
 - `NODE_ENV=production`
 
 Frontend (optional, defaults to `/api`):
-- `VITE_API_URL=/api`
+- `VITE_API_URL=/api` (optional; frontend uses `/api` in production by default)
 - `VITE_UPLOADS_URL` (only if you serve uploads from a separate host)
 
 ### 3. Deploy
