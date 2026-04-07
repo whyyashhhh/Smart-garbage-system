@@ -21,7 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadDir));
 
 // Database Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/smart-garbage-reporting';
+const MONGODB_URI = process.env.MONGODB_URI || (!isVercel ? 'mongodb://localhost:27017/smart-garbage-reporting' : '');
 
 let cached = global.mongoose;
 if (!cached) {
@@ -29,6 +29,10 @@ if (!cached) {
 }
 
 const connectDB = async () => {
+    if (!MONGODB_URI) {
+        throw new Error('MONGODB_URI is not set');
+    }
+
     if (cached.conn) {
         return cached.conn;
     }
