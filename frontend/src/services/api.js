@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const rawApiUrl = import.meta.env.VITE_API_URL;
+const isProduction = import.meta.env.PROD;
+const isLocalApiUrl = typeof rawApiUrl === 'string' && /localhost|127\.0\.0\.1/i.test(rawApiUrl);
+
+export const API_BASE_URL = isProduction && isLocalApiUrl
+    ? '/api'
+    : (rawApiUrl || '/api');
 
 export const UPLOADS_BASE_URL = (() => {
     if (import.meta.env.VITE_UPLOADS_URL) {
