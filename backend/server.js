@@ -21,7 +21,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadDir));
 
 // Database Connection
-const MONGODB_URI = process.env.MONGODB_URI || (!isVercel ? 'mongodb://localhost:27017/smart-garbage-reporting' : '');
+const mongoUriFromEnv =
+    process.env.MONGODB_URI ||
+    process.env.MONGODB_URL ||
+    process.env.MONGO_URI ||
+    process.env.DATABASE_URL ||
+    '';
+
+const MONGODB_URI = (mongoUriFromEnv || (!isVercel ? 'mongodb://localhost:27017/smart-garbage-reporting' : '')).trim();
 
 let cached = global.mongoose;
 if (!cached) {
@@ -39,7 +46,10 @@ const connectDB = async () => {
 
     if (!cached.promise) {
         cached.promise = mongoose
-            .connect(MONGODB_URI)
+            .connect(MONGODB_URI, {
+                serverSelectionTimeoutMS: 10000,
+                family: 4
+            })
             .then((mongooseInstance) => mongooseInstance)
             .catch((error) => {
                 cached.promise = null;
@@ -62,6 +72,18 @@ connectDB()
         }
     });
 
+// Health check route (kept before DB-gated /api middleware)
+app.get('/api/health', (req, res) => {
+    const state = mongoose.connection.readyState;
+    const dbStatus = state === 1 ? 'connected' : 'disconnected';
+
+    res.json({
+        success: true,
+        message: 'Server is running',
+        database: dbStatus
+    });
+});
+
 app.use('/api', async (req, res, next) => {
     try {
         await connectDB();
@@ -69,7 +91,7 @@ app.use('/api', async (req, res, next) => {
     } catch (error) {
         res.status(503).json({
             success: false,
-            message: 'Database connection unavailable. Please try again.'
+            message: 'Database connection unavailable. Verify MONGODB_URI and MongoDB Atlas network access.'
         });
     }
 });
@@ -79,14 +101,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/auth', authRoutes);
 app.use('/reports', reportRoutes);
-
-// Health check route
-app.get('/api/health', (req, res) => {
-    res.json({
-        success: true,
-        message: 'Server is running'
-    });
-});
 
 // 404 handler
 app.use((req, res) => {
