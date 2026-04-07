@@ -1,5 +1,8 @@
 const nodemailer = require('nodemailer');
 
+const APP_BASE_URL = (process.env.APP_BASE_URL || '').trim();
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').trim();
+
 // Create email transporter
 const createTransporter = () => {
     // For development, use Gmail or any SMTP service
@@ -161,11 +164,15 @@ const sendReportResolvedEmail = async (report, user) => {
 // Send new report notification to admin
 const sendNewReportNotification = async (report, user) => {
     try {
+        if (!ADMIN_EMAIL) {
+            return { success: false, error: 'ADMIN_EMAIL is not configured' };
+        }
+
         const transporter = createTransporter();
 
         const mailOptions = {
             from: process.env.EMAIL_USER || 'Smart Garbage System <noreply@garbagesystem.com>',
-            to: 'ocurse30@gmail.com',
+            to: ADMIN_EMAIL,
             subject: `New Report Submitted - ${report.garbageType}`,
             html: `
                 <!DOCTYPE html>
@@ -206,7 +213,7 @@ const sendNewReportNotification = async (report, user) => {
                             </div>
 
                             <p style="margin-top: 20px; text-align: center;">
-                                <a href="http://localhost:3002/admin" style="background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">View in Admin Panel</a>
+                                <a href="${APP_BASE_URL ? `${APP_BASE_URL}/admin` : '#'}" style="background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">View in Admin Panel</a>
                             </p>
                         </div>
                         <div class="footer">

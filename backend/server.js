@@ -10,6 +10,8 @@ const reportRoutes = require('./routes/reports');
 
 const app = express();
 const isVercel = Boolean(process.env.VERCEL);
+const NODE_ENV = (process.env.NODE_ENV || 'development').trim().toLowerCase();
+const isProduction = NODE_ENV === 'production';
 const uploadDir = process.env.UPLOAD_DIR || (isVercel ? '/tmp/uploads' : path.join(__dirname, 'uploads'));
 
 // Middleware
@@ -30,6 +32,39 @@ const mongoUriFromEnv =
 
 const MONGODB_URI = (mongoUriFromEnv || (!isVercel ? 'mongodb://localhost:27017/smart-garbage-reporting' : '')).trim();
 const JWT_SECRET = (process.env.JWT_SECRET || '').trim();
+let lastMongoError = null;
+
+const getMongoTroubleshootingHints = (errorMessage = '') => {
+    const message = errorMessage.toLowerCase();
+    const hints = [];
+
+    if (!MONGODB_URI) {
+        hints.push('Set MONGODB_URI in backend/.env (or your deployment environment variables).');
+        return hints;
+    }
+
+    if (message.includes('bad auth') || message.includes('authentication failed')) {
+        hints.push('Check Atlas database username/password in MONGODB_URI. URL-encode special characters in the password.');
+    }
+
+    if (message.includes('enotfound') || message.includes('querysrv')) {
+        hints.push('Check your Atlas cluster hostname in MONGODB_URI and verify DNS/network access from your machine/server.');
+    }
+
+    if (message.includes('server selection timed out')) {
+        hints.push('Whitelist your current IP in Atlas Network Access and ensure your internet/firewall allows MongoDB connections.');
+    }
+
+    if (message.includes('econnrefused')) {
+        hints.push('Local MongoDB is not reachable. Start MongoDB service or switch MONGODB_URI to Atlas.');
+    }
+
+    if (hints.length === 0) {
+        hints.push('Verify MONGODB_URI format, Atlas Network Access IP whitelist, and database user permissions.');
+    }
+
+    return hints;
+};
 
 const getMissingEnvVars = () => {
     const missing = [];
@@ -49,6 +84,7 @@ if (!cached) {
 
 const connectDB = async () => {
     if (!MONGODB_URI) {
+        lastMongoError = new Error('MONGODB_URI is not set');
         throw new Error('MONGODB_URI is not set');
     }
 
@@ -59,12 +95,15 @@ const connectDB = async () => {
     if (!cached.promise) {
         cached.promise = mongoose
             .connect(MONGODB_URI, {
-                serverSelectionTimeoutMS: 10000,
-                family: 4
+                serverSelectionTimeoutMS: 15000
             })
-            .then((mongooseInstance) => mongooseInstance)
+            .then((mongooseInstance) => {
+                lastMongoError = null;
+                return mongooseInstance;
+            })
             .catch((error) => {
                 cached.promise = null;
+                lastMongoError = error;
                 throw error;
             });
     }
@@ -79,9 +118,9 @@ connectDB()
     })
     .catch((error) => {
         console.error('❌ MongoDB connection error:', error.message);
-        if (!isVercel) {
-            process.exit(1);
-        }
+        const hints = getMongoTroubleshootingHints(error.message);
+        hints.forEach((hint) => console.error(`   - ${hint}`));
+        console.warn('⚠️  Server will continue running; database-backed routes may return 503 until MongoDB is reachable.');
     });
 
 // Health check route (kept before DB-gated /api middleware)
@@ -94,7 +133,9 @@ app.get('/api/health', (req, res) => {
         success: true,
         message: 'Server is running',
         database: dbStatus,
-        missingEnvVars
+        missingEnvVars,
+        mongoConfigured: Boolean(MONGODB_URI),
+        mongoLastError: lastMongoError?.message || null
     });
 });
 
@@ -103,10 +144,18 @@ app.use('/api', async (req, res, next) => {
         await connectDB();
         next();
     } catch (error) {
-        res.status(503).json({
+        const hints = getMongoTroubleshootingHints(error.message);
+        const response = {
             success: false,
-            message: 'Database connection unavailable. Verify MONGODB_URI and MongoDB Atlas network access.'
-        });
+            message: 'Database connection unavailable.',
+            hints
+        };
+
+        if (!isProduction) {
+            response.reason = error.message;
+        }
+
+        res.status(503).json(response);
     }
 });
 
