@@ -34,7 +34,13 @@ const connectDB = async () => {
     }
 
     if (!cached.promise) {
-        cached.promise = mongoose.connect(MONGODB_URI).then((mongooseInstance) => mongooseInstance);
+        cached.promise = mongoose
+            .connect(MONGODB_URI)
+            .then((mongooseInstance) => mongooseInstance)
+            .catch((error) => {
+                cached.promise = null;
+                throw error;
+            });
     }
 
     cached.conn = await cached.promise;
@@ -51,6 +57,18 @@ connectDB()
             process.exit(1);
         }
     });
+
+app.use('/api', async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        res.status(503).json({
+            success: false,
+            message: 'Database connection unavailable. Please try again.'
+        });
+    }
+});
 
 // API Routes
 app.use('/api/auth', authRoutes);

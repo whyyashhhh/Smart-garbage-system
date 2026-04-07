@@ -8,7 +8,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 // Signup Route
 router.post('/signup', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const name = req.body?.name?.trim();
+        const email = req.body?.email?.trim().toLowerCase();
+        const password = req.body?.password;
 
         // Validate input
         if (!name || !email || !password) {
@@ -50,9 +52,24 @@ router.post('/signup', async (req, res) => {
             }
         });
     } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({
+                success: false,
+                message: 'User with this email already exists'
+            });
+        }
+
+        if (error.name === 'ValidationError') {
+            const firstError = Object.values(error.errors)[0]?.message || 'Invalid signup data';
+            return res.status(400).json({
+                success: false,
+                message: firstError
+            });
+        }
+
         res.status(500).json({
             success: false,
-            message: 'Error during signup: ' + error.message
+            message: 'Error during signup. Please try again.'
         });
     }
 });
@@ -60,7 +77,8 @@ router.post('/signup', async (req, res) => {
 // Admin Login Route
 router.post('/admin/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const email = req.body?.email?.trim().toLowerCase();
+        const password = req.body?.password;
 
         // Validate input
         if (!email || !password) {
@@ -126,7 +144,8 @@ router.post('/admin/login', async (req, res) => {
 // Login Route
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const email = req.body?.email?.trim().toLowerCase();
+        const password = req.body?.password;
 
         // Validate input
         if (!email || !password) {
