@@ -3,11 +3,18 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Signup Route
 router.post('/signup', async (req, res) => {
     try {
+        if (!JWT_SECRET) {
+            return res.status(500).json({
+                success: false,
+                message: 'Server configuration error: JWT_SECRET is not set.'
+            });
+        }
+
         const name = req.body?.name?.trim();
         const email = req.body?.email?.trim().toLowerCase();
         const password = req.body?.password;
@@ -77,6 +84,13 @@ router.post('/signup', async (req, res) => {
 // Admin Login Route
 router.post('/admin/login', async (req, res) => {
     try {
+        if (!JWT_SECRET) {
+            return res.status(500).json({
+                success: false,
+                message: 'Server configuration error: JWT_SECRET is not set.'
+            });
+        }
+
         const email = req.body?.email?.trim().toLowerCase();
         const password = req.body?.password;
 
@@ -144,6 +158,13 @@ router.post('/admin/login', async (req, res) => {
 // Login Route
 router.post('/login', async (req, res) => {
     try {
+        if (!JWT_SECRET) {
+            return res.status(500).json({
+                success: false,
+                message: 'Server configuration error: JWT_SECRET is not set.'
+            });
+        }
+
         const email = req.body?.email?.trim().toLowerCase();
         const password = req.body?.password;
 

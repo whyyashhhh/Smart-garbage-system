@@ -29,6 +29,18 @@ const mongoUriFromEnv =
     '';
 
 const MONGODB_URI = (mongoUriFromEnv || (!isVercel ? 'mongodb://localhost:27017/smart-garbage-reporting' : '')).trim();
+const JWT_SECRET = (process.env.JWT_SECRET || '').trim();
+
+const getMissingEnvVars = () => {
+    const missing = [];
+    if (!MONGODB_URI) {
+        missing.push('MONGODB_URI');
+    }
+    if (!JWT_SECRET) {
+        missing.push('JWT_SECRET');
+    }
+    return missing;
+};
 
 let cached = global.mongoose;
 if (!cached) {
@@ -76,11 +88,13 @@ connectDB()
 app.get('/api/health', (req, res) => {
     const state = mongoose.connection.readyState;
     const dbStatus = state === 1 ? 'connected' : 'disconnected';
+    const missingEnvVars = getMissingEnvVars();
 
     res.json({
         success: true,
         message: 'Server is running',
-        database: dbStatus
+        database: dbStatus,
+        missingEnvVars
     });
 });
 

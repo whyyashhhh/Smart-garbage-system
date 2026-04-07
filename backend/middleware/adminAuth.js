@@ -1,9 +1,17 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Middleware to verify admin role
 const adminAuthMiddleware = async (req, res, next) => {
     try {
+        if (!JWT_SECRET) {
+            return res.status(500).json({
+                success: false,
+                message: 'Server configuration error: JWT_SECRET is not set.'
+            });
+        }
+
         // Get token from Authorization header
         const token = req.headers.authorization?.split(' ')[1];
 
@@ -15,7 +23,7 @@ const adminAuthMiddleware = async (req, res, next) => {
         }
 
         // Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key-change-this');
+        const decoded = jwt.verify(token, JWT_SECRET);
         
         // Get user from database to check role
         const user = await User.findById(decoded.id);

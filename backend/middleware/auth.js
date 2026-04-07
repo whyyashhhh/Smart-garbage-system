@@ -1,8 +1,16 @@
 const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Middleware to verify JWT token
 const authMiddleware = (req, res, next) => {
     try {
+        if (!JWT_SECRET) {
+            return res.status(500).json({
+                success: false,
+                message: 'Server configuration error: JWT_SECRET is not set.'
+            });
+        }
+
         // Get token from Authorization header
         const token = req.headers.authorization?.split(' ')[1];
 
@@ -14,7 +22,7 @@ const authMiddleware = (req, res, next) => {
         }
 
         // Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key-change-this');
+        const decoded = jwt.verify(token, JWT_SECRET);
         req.userId = decoded.id;
         req.email = decoded.email;
         next();
