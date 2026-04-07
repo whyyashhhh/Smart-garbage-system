@@ -38,7 +38,13 @@ export default function Signup() {
             // Redirect to dashboard
             navigate('/dashboard');
         } catch (err) {
-            setError(err.response?.data?.message || 'Signup failed. Please try again.');
+            if (err.response?.data?.message) {
+                setError(err.response.data.message);
+            } else if (err.request) {
+                setError('Cannot reach server. Check API URL and deployment logs.');
+            } else {
+                setError('Signup failed. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
